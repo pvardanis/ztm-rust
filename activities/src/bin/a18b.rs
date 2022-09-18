@@ -97,20 +97,21 @@ fn authorize(
     location: ProtectedLocation,
 ) -> Result<AuthorizationStatus, String> {
     // put your code here
+    let database: Database = Database::connect()?;
+    let employee: Employee = database.find_employee(employee_name)?;
+    let keycard: KeyCard = database.get_keycard(&employee)?;
+
+    match keycard.access_level >= location.required_access_level() {
+        true => Ok(AuthorizationStatus::Allow),
+        false => Ok(AuthorizationStatus::Deny),
+    }
 }
 
 fn main() {
-    // Anita is trying to access the Warehouse, which requires access level 500.
-    // Her keycard has access level 1000, which should be allowed.
-    let anita_authorized = authorize("Anita", ProtectedLocation::Warehouse);
-    // Brody is trying to access the Office, which requires access level 800.
-    // His keycard has access level 500, which should be denied.
-    let brody_authorized = authorize("Brody", ProtectedLocation::Office);
-    // Catherine is trying to access the Warehouse, which requires access level 500.
-    // She doesn't have a keycard, so this should be an error.
-    let catherine_authorized = authorize("Catherine", ProtectedLocation::Warehouse);
+    let authorization = authorize("Catherine", ProtectedLocation::Warehouse);
 
-    println!("{anita_authorized:?}");
-    println!("{brody_authorized:?}");
-    println!("{catherine_authorized:?}");
+    match authorization {
+        Ok(status) => println!("{:?}", status),
+        Err(error) => println!("{:?}", error),
+    }
 }
